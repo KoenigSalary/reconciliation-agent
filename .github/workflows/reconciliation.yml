@@ -33,10 +33,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: pip
+            python-version: "3.11"
 
       - name: Install system deps (optional; for PDF parsing)
         run: |
@@ -44,10 +43,11 @@ jobs:
           sudo apt-get install -y ghostscript python3-tk tcl
 
       - name: Install Python deps
-        run: |
-          pip install -r requirements.txt
-          # If parsing PDF statements:
-          # pip install camelot-py[cv]
+      run: |
+        pip install pandas numpy openpyxl XlsxWriter python-dateutil tzdata python-dotenv requests httpx
+        # optional:
+        # pip install stripe
+        # pip install "camelot-py[cv]"
 
       - name: Run orchestrator
         env:
