@@ -1,0 +1,69 @@
+name: Reconciliation Agent
+on:
+  schedule:
+    # GitHub cron is UTC; 09:00 Africa/Lagos ≈ 08:00 UTC
+    - cron: "0 8 * * 1"     # Weekly Stripe validation (Mon 09:00 Lagos)
+    - cron: "0 8 */3 * *"   # CC quick check every 3 days (09:00 Lagos)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  APP_TIMEZONE: Africa/Lagos
+  APP_DATA_DIR: ./data
+  APP_PROCESSED_DIR: ./data/processed
+  APP_REPORTS_DIR: ./reports
+  APP_LOGS_DIR: ./logs
+  FX_MARKUP_TOL_PCT: "2.5"
+  FX_INR_TOL: "100"
+  AMOUNT_MATCH_TOL_INR: "10"
+  DATE_WINDOW_DAYS: "2"
+  LATE_ENTRY_WORKING_DAYS: "3"
+  INVOICE_LATER_DAYS: "14"
+  FINANCE_ESCALATION_DAYS: "30"
+  APP_HOLIDAYS: ""
+  SMTP_FROM: recon@yourdomain.com
+  SLACK_DEFAULT_CHANNEL: "#recon-alerts"
+
+jobs:
+  recon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install system deps (optional; for PDF parsing)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ghostscript python3-tk tcl
+      - name: Install Python deps
+        run: |
+          pip install -r requirements.txt
+          # If parsing PDF statements:
+          # pip install camelot-py[cv]
+      - name: Run orchestrator
+        env:
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+          FX_API_KEY: ${{ secrets.FX_API_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          AP_TEAM: ${{ vars.AP_TEAM || secrets.AP_TEAM }}
+          FINANCE_MGMT: ${{ vars.FINANCE_MGMT || secrets.FINANCE_MGMT }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          RMS_BASE_URL: ${{ vars.RMS_BASE_URL || 'https://rms.koenig-solutions.com' }}
+          RMS_USER: ${{ secrets.RMS_USER }}
+          RMS_PASS: ${{ secrets.RMS_PASS }}
+          FX_PROVIDER: ${{ vars.FX_PROVIDER || 'fixer' }}
+        run: python reconciliation_orchestrator.py
+      - name: Upload reports artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reconciliation-reports
+          path: reports/*.xlsx
+          if-no-files-found: warn
+YAML
