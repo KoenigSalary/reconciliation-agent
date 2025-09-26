@@ -2,9 +2,8 @@ name: Reconciliation Agent
 
 on:
   schedule:
-    # GitHub cron is UTC; 09:00 Africa/Lagos ≈ 08:00 UTC
-    - cron: "0 8 * * 1"     # Weekly (Mon)
-    - cron: "0 8 */3 * *"   # Every 3 days
+    - cron: "0 8 * * 1"
+    - cron: "0 8 */3 * *"
   workflow_dispatch:
 
 permissions:
