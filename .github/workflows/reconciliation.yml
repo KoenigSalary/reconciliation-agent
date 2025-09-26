@@ -1,4 +1,3 @@
-name: Reconciliation Agent
 on:
   schedule:
     # GitHub cron is UTC; 09:00 Africa/Lagos ≈ 08:00 UTC
